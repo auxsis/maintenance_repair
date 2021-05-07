@@ -12,25 +12,25 @@ class StockMove(models.Model):
 class MaintenanceTeam(models.Model):
     _inherit = 'maintenance.team'
 
-    repair_location_id = fields.Many2one('stock.location', string='Default Repair Parts Source')
-    repair_location_dest_id = fields.Many2one('stock.location', string='Default Repair Parts Destination')
+    repair_location_id = fields.Many2one('stock.location', string='Fuente predeterminada para piezas de reparación')
+    repair_location_dest_id = fields.Many2one('stock.location', string='Destino predeterminado para piezas de reparación')
 
 
 class MaintenanceRequest(models.Model):
     _inherit = 'maintenance.request'
 
-    maintenance_type = fields.Selection(selection_add=[('negligence', 'Negligence')])
-    repair_line_ids = fields.One2many('maintenance.request.repair.line', 'request_id', 'Parts', copy=True)
+    maintenance_type = fields.Selection(selection_add=[('install', 'Instalacion'),('negligence', 'Negligencia')])
+    repair_line_ids = fields.One2many('maintenance.request.repair.line', 'request_id', 'Partes', copy=True)
     repair_status = fields.Selection([
-        ('repaired', 'Repaired'),
-        ('to repair', 'To Repair'),
-        ('no', 'Nothing to Repair')
-        ], string='Repair Status', compute='_get_repaired', store=True, readonly=True)
-    repair_location_id = fields.Many2one('stock.location', string='Source Location')
-    repair_location_dest_id = fields.Many2one('stock.location', string='Destination Location')
-    total_lst_price = fields.Float(string='Total Price', compute='_compute_repair_totals', stored=True)
-    total_standard_price = fields.Float(string='Total Est. Cost', compute='_compute_repair_totals', stored=True)
-    total_cost = fields.Float(string='Total Cost', compute='_compute_repair_totals', stored=True)
+        ('repaired', 'Reparado'),
+        ('to repair', 'Reparar'),
+        ('no', 'Nada que reparar')
+        ], string='Estado de reparación', compute='_get_repaired', store=True, readonly=True)
+    repair_location_id = fields.Many2one('stock.location', string='Ubicación de origen')
+    repair_location_dest_id = fields.Many2one('stock.location', string='Ubicación de destino')
+    total_lst_price = fields.Float(string='Precio total', compute='_compute_repair_totals', stored=True)
+    total_standard_price = fields.Float(string='Costo total estimado', compute='_compute_repair_totals', stored=True)
+    total_cost = fields.Float(string='Coste total', compute='_compute_repair_totals', stored=True)
 
     @api.depends('repair_line_ids.lst_price', 'repair_line_ids.standard_price', 'repair_line_ids.cost')
     def _compute_repair_totals(self):
@@ -66,25 +66,25 @@ class MaintenanceRequestRepairLine(models.Model):
     _name = 'maintenance.request.repair.line'
 
     request_id = fields.Many2one('maintenance.request', copy=False)
-    product_id = fields.Many2one('product.product', 'Product', required=True,
+    product_id = fields.Many2one('product.product', 'Producto', required=True,
                                  states={'done': [('readonly', True)]})
-    product_uom_qty = fields.Float('Quantity', default=1.0,
-                                   digits=dp.get_precision('Product Unit of Measure'), required=True,
+    product_uom_qty = fields.Float('Cantidad', default=1.0,
+                                   digits=dp.get_precision('Unidad de medida del producto'), required=True,
                                    states={'done': [('readonly', True)]})
-    product_uom_id = fields.Many2one('uom.uom', 'Product Unit of Measure', required=True,
+    product_uom_id = fields.Many2one('uom.uom', 'Unidad de medida del producto', required=True,
                                      states={'done': [('readonly', True)]})
     state = fields.Selection([
-        ('draft', 'Draft'),
-        ('done', 'Done'),
+        ('draft', 'Borrador'),
+        ('done', 'Hecho'),
     ], string='State', copy=False, default='draft')
-    move_id = fields.Many2one('stock.move', string='Stock Move')
-    lst_price = fields.Float(string='Sale Price', states={'done': [('readonly', True)]})
-    standard_price = fields.Float(string='Est. Cost', states={'done': [('readonly', True)]})
-    cost = fields.Float(string='Cost', compute='_compute_actual_cost', stored=True)
+    move_id = fields.Many2one('stock.move', string='Movimiento de stock')
+    lst_price = fields.Float(string='Precio de venta', states={'done': [('readonly', True)]})
+    standard_price = fields.Float(string='Costo estimado', states={'done': [('readonly', True)]})
+    cost = fields.Float(string='Costo', compute='_compute_actual_cost', stored=True)
     
     def unlink(self):
         if self.filtered(lambda l: l.state == 'done'):
-            raise UserError(_('Only draft lines can be deleted.'))
+            raise UserError(_('Solo se pueden eliminar líneas estando en borrador.'))
         return super(MaintenanceRequestRepairLine, self).unlink()
 
     @api.onchange('product_id', 'product_uom_qty')
@@ -127,12 +127,12 @@ class MaintenanceRequestRepairLine(models.Model):
             move._action_confirm()
             move._action_assign()
             if move.state != 'assigned':
-                raise ValidationError(_('Unable to reserve inventory.'))
+                raise ValidationError(_('No es posible reservar el inventario.'))
 
             move.quantity_done = line.product_uom_qty
             move._action_done()
             if move.state != 'done':
-                raise ValidationError(_('Unable to move inventory.'))
+                raise ValidationError(_('No se ha podido mover el inventario.'))
 
             line.write({'move_id': move.id, 'state': 'done'})
         return True
@@ -159,3 +159,8 @@ class MaintenanceEquipment(models.Model):
             'repair_location_id': self.maintenance_team_id.repair_location_id.id,
             'repair_location_dest_id': self.maintenance_team_id.repair_location_dest_id.id
         })
+class ProductTemplate(models.Model):
+    _name = "product.template"
+    _inherit = "product.template"
+
+    isParts = fields.Boolean('Puede ser una parte')
