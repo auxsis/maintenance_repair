@@ -1,16 +1,16 @@
 {
     'name': 'Equipment Repair',
-    'version': '13.0.1.0.0',
-    'author': 'Hibou Corp. <hello@hibou.io>',
+    'version': '14.0.1.0.0',
+    'author': 'Hibou Corp.',
     'category': 'Human Resources',
-    'summary': 'Consume products on Maintenance Requests',
+    'summary': 'Consumir productos en solicitudes de mantenimiento',
     'description': """
-Equipment Repair
+Reparación de equipos
 ================
 
-Keep track of parts required to repair equipment.
+Lleve un registro de las piezas necesarias para reparar el equipo..
 """,
-    'website': 'https://hibou.io/',
+    'website': '',
     'depends': [
         'stock',
         'maintenance_notebook',
