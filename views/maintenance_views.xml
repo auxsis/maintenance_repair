@@ -43,7 +43,7 @@
                     </group>
 
                     <field name="repair_line_ids">
-                        <tree editable="bottom" string="Part Operations" colors="blue:state=='draft'">
+                        <tree editable="bottom" string="Operaciones de piezas" colors="blue:state=='draft'">
                             <field name="state" invisible="1"/>
                             <field name="product_id" domain="[('isParts','=',True)]"/>
                             <field name="product_uom_id"/>
@@ -75,7 +75,7 @@
         <field name="inherit_id" ref="maintenance.hr_equipment_request_view_search"/>
         <field name="arch" type="xml">
             <xpath expr="//filter[@name='done']" position="after">
-                <filter string="To Repair" name="to_repair" domain="[('repair_status', '=', 'to repair')]"/>
+                <filter string="Reparar" name="to_repair" domain="[('repair_status', '=', 'to repair')]"/>
             </xpath>
         </field>
     </record>
