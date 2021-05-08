@@ -7,6 +7,7 @@ class StockMove(models.Model):
     _inherit = 'stock.move'
 
     maintenance_request_id = fields.Many2one('maintenance.request')
+    lot_id = fields.Many2one('stock.production.lot', 'Lotes/Números de serie') 
 
 
 class MaintenanceTeam(models.Model):
@@ -73,6 +74,9 @@ class MaintenanceRequestRepairLine(models.Model):
                                    states={'done': [('readonly', True)]})
     product_uom_id = fields.Many2one('uom.uom', 'Unidad de medida del producto', required=True,
                                      states={'done': [('readonly', True)]})
+    lot_id = fields.Many2one('stock.production.lot', 'Lotes/Números de serie',
+                                 domain="[('product_id','=', product_id)]", check_company=True,
+                                 states={'done': [('readonly', True)]})                                     
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('done', 'Hecho'),
@@ -93,6 +97,13 @@ class MaintenanceRequestRepairLine(models.Model):
             self.product_uom_id = self.product_id.uom_id
             self.lst_price = self.product_id.lst_price * self.product_uom_qty
             self.standard_price = self.product_id.standard_price * self.product_uom_qty
+        if (self.product_id and self.lot_id and self.lot_id.product_id != self.product_id) or not self.product_id:
+            self.lot_id = False    
+   
+    @api.constrains('lot_id', 'product_id')
+    def constrain_lot_id(self):
+        for line in self.filtered(lambda x: x.product_id.tracking != 'none' and not x.lot_id):
+            raise ValidationError(_("Se requiere el número de serie del producto '%s'") % (line.product_id.name))            
 
     @api.depends('product_id', 'move_id')
     def _compute_actual_cost(self):
@@ -111,10 +122,11 @@ class MaintenanceRequestRepairLine(models.Model):
             'location_id': self.request_id.repair_location_id.id,
             'location_dest_id': self.request_id.repair_location_dest_id.id,
             'maintenance_request_id': self.request_id.id,
-            'origin': self.request_id.name,
+            'origin': self.request_id.code,
+            'lot_id': self.lot_id.id,            
         }
         # Optional modules for linking maintenance requests to projects, and stock moves to analytic accounts
-        if hasattr(self.request_id, 'project_id') and hasattr(self.env['stock.move'], 'analytic_account_id'):
+        if hasattr(self.request_id, 'project_id') and hasattr(self.env['stock.move.line'], 'analytic_account_id'):
             values['analytic_account_id'] = self.request_id.project_id.analytic_account_id.id
         return values
 
@@ -127,9 +139,11 @@ class MaintenanceRequestRepairLine(models.Model):
             move._action_confirm()
             move._action_assign()
             if move.state != 'assigned':
-                raise ValidationError(_('No es posible reservar el inventario.'))
+                raise ValidationError(_("No se ha podido reservar el producto '%s' ya que no se encuentra en tu almacen") % (line.product_id.name)) 
 
             move.quantity_done = line.product_uom_qty
+            if line.lot_id:
+                    move.move_line_ids.lot_id = line.lot_id
             move._action_done()
             if move.state != 'done':
                 raise ValidationError(_('No se ha podido mover el inventario.'))
