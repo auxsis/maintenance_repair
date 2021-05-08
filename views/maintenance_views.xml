@@ -31,7 +31,7 @@
         <field name="inherit_id" ref="maintenance_notebook.hr_equipment_request_view_form_notebook"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page string="Parts">
+                <page string="Partes y repuestos">
                     <group>
                         <group>
                             <field name="repair_location_id"/>
@@ -48,6 +48,7 @@
                             <field name="product_id" domain="[('isParts','=',True)]"/>
                             <field name="product_uom_id"/>
                             <field name="product_uom_qty"/>
+                            <field name="lot_id" context="{'default_product_id': product_id}" groups="stock.group_production_lot"/>
                             <field name="lst_price"/>
                             <field name="standard_price" groups="account.group_account_user"/>
                             <field name="cost" groups="account.group_account_user"/>
@@ -94,9 +95,9 @@
         </record>
     
     <!-- Partes -->
-        <menuitem name="Parts"
+        <menuitem name="Partes"
         id="menu_maintenance_parts"
-        parent="maintenance.menu_maintenance_configuration"
+        parent="maintenance.menu_maintenance_title"
         sequence="9"/>
     
     <record id="part_search_form_view" model="ir.ui.view">
@@ -112,7 +113,7 @@
         </record>
 
         <record id="part_action" model="ir.actions.act_window">
-            <field name="name">Parte</field>
+            <field name="name">Partes y repuestos</field>
             <field name="res_model">product.template</field>
             <field name="view_mode">tree,form,kanban</field>
             <field name="search_view_id" ref="part_search_form_view"/>
@@ -123,9 +124,40 @@
               </p>
             </field>
         </record>
+        
+        <record id="part_stock_search_form_view" model="ir.ui.view">
+            <field name="name">stock.quant.search.maintenance</field>
+            <field name="model">stock.quant</field>
+            <field name="mode">primary</field>
+            <field name="inherit_id" ref="stock.quant_search_view"/>
+            <field name="arch" type="xml">
+                <filter name="internal_loc" position="before">
+                    <filter string="Stock en mano" name="parts" domain="[('on_hand','=',True),('quantity', '&gt;', 0.0)]" help="Partes almacenandas en tu inventario"/>
+                </filter>
+            </field>
+        </record>
+        
+        <record id="part_stock_action" model="ir.actions.act_window">
+            <field name="name">Stock de partes por ubicacion</field>
+            <field name="res_model">stock.quant</field>
+            <field name="view_mode">tree,form,kanban</field>
+            <field name="search_view_id" ref="part_stock_search_form_view"/>
+            <field name="context" eval="{'default_isParts': True, 'search_default_parts':1}"/>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+                Listado de productos por ubicacion
+              </p>
+            </field>
+        </record>
+        
         <menuitem name="Partes"
         action="part_action"
         id="menu_maintenance_parts_parts"
+        parent="menu_maintenance_parts"
+        sequence="10"/>
+        <menuitem name="Stock actual"
+        action="part_stock_action"
+        id="menu_maintenance_parts_stock"
         parent="menu_maintenance_parts"
         sequence="100"/>
 
