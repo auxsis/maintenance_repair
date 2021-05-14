@@ -1,7 +1,7 @@
 {
     'name': 'Equipment Repair',
     'version': '14.0.1.0.0',
-    'author': 'Hibou Corp.',
+    'author': 'Hibou Corp. SolucionCB.com',
     'category': 'Human Resources',
     'summary': 'Consumir productos en solicitudes de mantenimiento',
     'description': """
